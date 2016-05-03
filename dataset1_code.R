@@ -2,7 +2,6 @@
 setwd('documents/sjsu/265/time-series-project')
 
 p1.data <- scan('proj1.txt')
-p1.data.diff <- diff(p1.data, differences = 1)
 p1.data.demean <- p1.data - mean(p1.data)
 
 df <- data.frame(p1.data, p1.data.demean)
@@ -27,14 +26,6 @@ geom_smooth(aes(y = p1.data), colour = 'red')
 mean(p1.data)
 # Mean is non-zero
 
-## Visuals differenced data
-plot(p1.data.diff, type = "b")
-
-par(mfrow=c(2,1))
-   acf(p1.data.diff, type = c("correlation"))
-   acf(p1.data.diff, type = c("partial"))
-par(mfrow=c(1,1))
-
 ## Visuals demeaned data
 plot(p1.data.demean, type = "b")
 
@@ -52,9 +43,9 @@ library(tseries)
 adf.test(p1.data)
 # Result: reject null hypothesis that the data is not stationary, conclude stationary; no differencing needed
 
-# General AIC analysis of many models up to ARMA(10,10)
-ar.p <- 10
-ma.q <- 10
+# General AIC analysis of many models up to ARMA(8,2)
+ar.p <- 8
+ma.q <- 2
 
 ar.vec <- rep(0:ar.p, each = (ma.q + 1))
 ma.vec <- rep(seq(0,ma.q), (ar.p + 1))
@@ -64,13 +55,29 @@ sig2.vec <- vector()
 loglik.vec <- vector()
 for(p in 1:(ar.p + 1)) {
     for(q in 1:(ma.q + 1)) {
-        aic.vec <- c(aic.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE))$aic, error = function(e){NaN}))
-        sig2.vec <- c(sig2.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE))$sigma2, error = function(e){NaN}))
-        loglik.vec <- c(loglik.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE))$loglik, error = function(e){NaN}))
+        aic.vec <- c(aic.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML"))$aic, error = function(e){NaN}))
+        sig2.vec <- c(sig2.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML"))$sigma2, error = function(e){NaN}))
+        loglik.vec <- c(loglik.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML"))$loglik, error = function(e){NaN}))
     }
 }
 
-aic.df <- data.frame(AR = ar.vec, MA = ma.vec, AIC = aic.vec, Sigma2 = sig2.vec, LogLik = loglik.vec)
+aic.vec <- vector()
+sig2.vec <- vector()
+loglik.vec <- vector()
+arma.res.ss <- vector()
+bic.vec <- vector()
+for(p in 1:(ar.p + 1)) {
+    for(q in 1:(ma.q + 1)) {
+    	temp.arma <- arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML")
+        aic.vec <- c(aic.vec, temp.arma$aic)
+        sig2.vec <- c(sig2.vec, temp.arma$sigma2)
+        loglik.vec <- c(loglik.vec, temp.arma$loglik)
+        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2))
+        bic.vec <- c(bic.vec, BIC(temp.arma))
+    }
+}
+
+aic.df <- data.frame(AR = ar.vec, MA = ma.vec, AIC = aic.vec, BIC = bic.vec, Sigma2 = sig2.vec, LogLik = loglik.vec, SSres = arma.res.ss)
 
 aic.df.clean <- aic.df[aic.df$AIC != 'NaN',]
 aic.df.clean$AICchange <- round(100*(aic.df.clean$AIC - min(aic.df.clean$AIC))/min(aic.df.clean$AIC), digits = 2)
@@ -89,21 +96,79 @@ L2 <- 10
 nu <- (aic.df.clean.sort$TotalParams[L2] - aic.df.clean.sort$TotalParams[L1])
 ifelse( (aic.df.clean.sort$LL2[L1] - aic.df.clean.sort$LL2[L2]) > (nu + sqrt(2*nu)), 'REJECT the null hypothesis', 'Retain the null hypothesis: choose smaller model')
 
-## Candidates
-# AR(10)
-# AR(9)
-# AR(8)
-# AR(7)
-# AR(6)
-# ARMA(6,9)
-# ARMA(10,6)
-# ARMA(8,8)
-# ARMA(7,9)
-# ARMA(8,9)
-# ARMA(8,10)
-# ARMA(9,10)
-# ARMA(10,10)
+# Plotting residual sum of squares against order to see where curve flattens out: looks like 5 (minor decrease again at 7 but flat afterwards)
+ar.res.ss <- vector(mode = 'numeric')
+for(p in 1:13) {
+	temp.ar <- arima(p1.data.demean, order = c(p-1,0,0), include.mean = FALSE)
+	ar.res.ss[p-1] <- sum((temp.ar$residuals)^2)
+}
+plot(0:(length(ar.res.ss)-1), ar.res.ss)
 
-my.arma.10.10 <- arima(p1.data.demean, order = c(10,0,10), include.mean = FALSE, method = "ML", init = rep(0.01,20))
-tsdiag(my.arma.10.10)
-acf(my.arma.10.10$residuals, type= "partial")
+### Candidates
+# AR(5)
+# AR(6)
+# AR(7)
+# AR(8)
+# ARMA(3,1) *
+# ARMA(3,2) *
+# ARMA(4,1) *
+# ARMA(4,2) 
+# ARMA(5,1) *
+# ARMA(5,2)
+# ARMA(6,1)
+# ARMA(6,2)
+# ARMA(7,1)
+# ARMA(7,2)
+# ARMA(8,1) *
+# ARMA(8,2)
+
+p1.train <- p1.data.demean[1:451]
+
+# Candidate Evalutaions
+
+# Predictions
+my.preds.p.q <- predict(my.arma.p.q, n.ahead = 50, se.fit = TRUE)
+
+# Predictions Error
+sse.p.q <- sum((p1.data.demean[452:501] - my.preds.p.q)^2)
+
+# Indices need to be updated
+plot(450:488, p1.data[450:488], ylim = c(-650, 650), xlim=c(450,502), type="b")
+lines(489:501, my.preds.5.2$pred + mean(p1.data), type="b", col="red")
+lines(489:501, my.preds.5.2$pred + mean(p1.data) + 2*my.preds.5.2$se, type="l", col="blue")
+lines(489:501, my.preds.5.2$pred + mean(p1.data) - 2*my.preds.5.2$se, type="l", col="blue")
+points(489:501, p1.data[489:501], col="purple")
+
+
+# Comparing theoretical acf/pacf to sample based on estimated model parameters
+par(mfcol=c(2,2))
+   acf(p1.data.demean, type = c("correlation"))
+   plot(0:25, ARMAacf(ar = my.arma.10.10$coef[1:10], ma = my.arma.10.10$coef[11:20], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
+   abline(h=0)
+   acf(p1.data.demean, type = c("partial"))
+   plot(1:25, ARMAacf(ar = my.arma.10.10$coef[1:10], ma = my.arma.10.10$coef[11:20], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
+   abline(h=0)
+par(mfrow=c(1,1)) 
+
+
+# AR(6) - AR(10) Issues:
+# There are a few lags in the acf of the residuals that are close to the boundary
+# Ljung-Box Statistic gets very close to p-value of 0.05 for larger lags. The lower the order, the more tests give p-values that suggest rejecting null
+# Several PACF values were significant at larger lags
+
+##### FINAL MODEL #####
+
+my.arma.final <- arima(p1.data.demean, order = c(0,0,0), include.mean = FALSE)
+
+# CHECK RESIDUALS
+# Final 13 predictions
+
+my.real.preds <- predict(my.final.fit, n.ahead = 13, se.fit = TRUE)
+
+preds <- my.real.preds$pred
+lower.bound <- my.real.preds$pred - 2*my.real.preds$se
+upper.bound <- my.real.preds$pred + 2*my.real.preds$se
+
+cbind(lower.bound, preds, upper.bound)
+
+# Plot predictions
