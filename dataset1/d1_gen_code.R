@@ -44,12 +44,11 @@ adf.test(p1.data)
 # Result: reject null hypothesis that the data is not stationary, conclude stationary; no differencing needed
 
 # General AIC analysis of many models up to ARMA(8,2)
-ar.p <- 8
-ma.q <- 3
+ar.p <- 7
+ma.q <- 10
 
 ar.vec <- rep(0:ar.p, each = (ma.q + 1))
 ma.vec <- rep(seq(0,ma.q), (ar.p + 1))
-
 
 '''Original code for arima dataframe with error catching
 aic.vec <- vector()
@@ -127,95 +126,20 @@ for(p in 1:13) {
 plot(0:(length(ar.res.ss)-1), ar.res.ss)
 
 ### Candidates
-# ARMA(5,3)
-# ARMA(7,3)
-# ARMA(8,1)
-# ARMA(7,1)
-# ARMA(5,2)
-# ARMA(8,3)
-# ARMA(3,3)
-# ARMA(4,1)
-# ARMA(8,2)
-# ARMA(6,1)
-# ARMA(5,1)
-
-p1.train.w.mean <- p1.data[1:(length(p1.data)-25)]
-train.mean <- mean(p1.train.w.mean)
-p1.train <- p1.train.w.mean - train.mean
-
-# Candidate Evalutaions
-# One significant acf value at lag 19 for first
-my.arma.5.3 <- arima(p1.train, order = c(5,0,3), include.mean = FALSE, method = "ML")
-my.arma.7.3 <- arima(p1.train, order = c(7,0,3), include.mean = FALSE, method = "ML", init = c(rep(0,6),0.01,0.01,0.01,0.01))
-my.arma.8.1 <- arima(p1.train, order = c(8,0,1), include.mean = FALSE, method = "ML")
-my.arma.7.1 <- arima(p1.train, order = c(7,0,1), include.mean = FALSE, method = "ML")
-my.arma.5.2 <- arima(p1.train, order = c(5,0,2), include.mean = FALSE, method = "ML")
-my.arma.8.3 <- arima(p1.train, order = c(8,0,3), include.mean = FALSE, method = "ML")
-my.arma.3.3 <- arima(p1.train, order = c(3,0,3), include.mean = FALSE, method = "ML")
-# acf values slightly larger in general
-my.arma.4.1 <- arima(p1.train, order = c(4,0,1), include.mean = FALSE, method = "ML")
-my.arma.8.2 <- arima(p1.train, order = c(8,0,2), include.mean = FALSE, method = "ML")
-my.arma.6.1 <- arima(p1.train, order = c(6,0,1), include.mean = FALSE, method = "ML")
-my.arma.5.1 <- arima(p1.train, order = c(5,0,1), include.mean = FALSE, method = "ML")
-
-library(tseries)
-tsdiag(my.arma.5.1)
-
-
-# Predictions
-my.preds.5.3 <- predict(my.arma.5.3, n.ahead = 25, se.fit = TRUE)
-my.preds.7.3 <- predict(my.arma.7.3, n.ahead = 25, se.fit = TRUE)
-my.preds.8.1 <- predict(my.arma.8.1, n.ahead = 25, se.fit = TRUE)
-my.preds.7.1 <- predict(my.arma.7.1, n.ahead = 25, se.fit = TRUE)
-my.preds.5.2 <- predict(my.arma.5.2, n.ahead = 25, se.fit = TRUE)
-my.preds.8.3 <- predict(my.arma.8.3, n.ahead = 25, se.fit = TRUE)
-my.preds.3.3 <- predict(my.arma.3.3, n.ahead = 25, se.fit = TRUE)
-my.preds.4.1 <- predict(my.arma.4.1, n.ahead = 25, se.fit = TRUE)
-my.preds.8.2 <- predict(my.arma.8.2, n.ahead = 25, se.fit = TRUE)
-my.preds.6.1 <- predict(my.arma.6.1, n.ahead = 25, se.fit = TRUE)
-my.preds.5.1 <- predict(my.arma.5.1, n.ahead = 25, se.fit = TRUE)
-
-# Predictions Error
-sse.5.3 <- sum((p1.data[477:501] - (my.preds.5.3$pred + train.mean))^2)
-sse.7.3 <- sum((p1.data[477:501] - (my.preds.7.3$pred + train.mean))^2)
-sse.8.1 <- sum((p1.data[477:501] - (my.preds.8.1$pred + train.mean))^2)
-sse.7.1 <- sum((p1.data[477:501] - (my.preds.7.1$pred + train.mean))^2)
-sse.5.2 <- sum((p1.data[477:501] - (my.preds.5.2$pred + train.mean))^2)
-sse.8.3 <- sum((p1.data[477:501] - (my.preds.8.3$pred + train.mean))^2)
-sse.3.3 <- sum((p1.data[477:501] - (my.preds.3.3$pred + train.mean))^2)
-sse.4.1 <- sum((p1.data[477:501] - (my.preds.4.1$pred + train.mean))^2)
-sse.8.2 <- sum((p1.data[477:501] - (my.preds.8.2$pred + train.mean))^2)
-sse.6.1 <- sum((p1.data[477:501] - (my.preds.6.1$pred + train.mean))^2)
-sse.5.1 <- sum((p1.data[477:501] - (my.preds.5.1$pred + train.mean))^2)
-
-pred.error <- data.frame(sse.5.3,sse.7.3,sse.8.1,sse.7.1,sse.5.2,sse.8.3,sse.3.3,sse.4.1,sse.8.2,sse.6.1,sse.5.1)
-pred.error[order(pred.error)]
-
-eval.round.1 <- pred.error[order(pred.error)]
-eval.round.2 <- pred.error[order(pred.error)]
-eval.round.3 <- pred.error[order(pred.error)]
-
-# Comparing models close to winner above
-my.comp.arma <- arima(p1.train, order = c(9,0,3), include.mean = FALSE, method = "ML")
-my.comp.pred <- predict(my.comp.arma, n.ahead = 50, se.fit = TRUE)
-sse.pred.comp <- sum((p1.data[452:501] - (my.comp.pred$pred + train.mean))^2)
-sse.pred.comp
-
-# Indices need to be updated
-plot(400:476, p1.data[400:476], ylim = c(-650, 650), xlim=c(400,502), type="b")
-lines(477:501, (my.preds.3.3$pred + mean(train.mean)), type="b", col="red")
-lines(477:501, (my.preds.3.3$pred + mean(train.mean)) + 2*my.preds.3.3$se, type="l", col="blue")
-lines(477:501, (my.preds.3.3$pred + mean(train.mean)) - 2*my.preds.3.3$se, type="l", col="blue")
-points(477:501, p1.data[477:501], col="purple")
-
+#     AR MA      AIC      BIC   Sigma2    LogLik   SSres Rank
+# 119 10  8 5309.577 5389.692 2114.304 -2635.788 1059266   79
+# 76   6  9 5315.608 5383.074 2182.558 -2641.804 1093462  117
+# 117 10  6 5316.316 5387.998 2168.644 -2641.158 1086491  121
+# 93   8  4 5314.221 5369.037 2209.413 -2644.110 1106916  124
+# 81   7  3 5313.644 5360.027 2217.462 -2645.822 1110949  125
 
 # Comparing theoretical acf/pacf to sample based on estimated model parameters
 par(mfcol=c(2,2))
-   acf(p1.data.demean, type = c("correlation"))
-   plot(0:25, ARMAacf(ar = my.arma.10.10$coef[1:10], ma = my.arma.10.10$coef[11:20], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
+   acf(p1.train, type = c("correlation"))
+   plot(0:25, ARMAacf(ar = my.arma.10.8$coef[1:10], ma = my.arma.10.8$coef[11:18], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
    abline(h=0)
-   acf(p1.data.demean, type = c("partial"))
-   plot(1:25, ARMAacf(ar = my.arma.10.10$coef[1:10], ma = my.arma.10.10$coef[11:20], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
+   acf(p1.train, type = c("partial"))
+   plot(1:25, ARMAacf(ar = my.arma.10.8$coef[1:10], ma = my.arma.10.8$coef[11:18], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
    abline(h=0)
 par(mfrow=c(1,1)) 
 
@@ -227,17 +151,23 @@ par(mfrow=c(1,1))
 
 ##### FINAL MODEL #####
 
-my.arma.final <- arima(p1.data.demean, order = c(0,0,0), include.mean = FALSE)
+my.arma.final <- arima(p1.data.demean, order = c(6,0,9), include.mean = FALSE)
 
 # CHECK RESIDUALS
+tsdiag(my.arma.final)
 # Final 13 predictions
 
-my.real.preds <- predict(my.final.fit, n.ahead = 13, se.fit = TRUE)
+my.preds.final <- predict(my.arma.final, n.ahead = 13, se.fit = TRUE)
 
-preds <- my.real.preds$pred
-lower.bound <- my.real.preds$pred - 2*my.real.preds$se
-upper.bound <- my.real.preds$pred + 2*my.real.preds$se
+preds <- my.preds.final$pred + mean(p1.data)
+se <- my.preds.final$se
+lower.bound <- preds - 2*se
+upper.bound <- preds + 2*se
 
 cbind(lower.bound, preds, upper.bound)
 
 # Plot predictions
+plot(450:501, p1.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
+lines(502:514, preds, type="b", col="red")
+lines(502:514, upper.bound, type="l", col="blue")
+lines(502:514, lower.bound, type="l", col="blue")
