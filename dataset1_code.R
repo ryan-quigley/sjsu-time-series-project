@@ -139,7 +139,7 @@ plot(0:(length(ar.res.ss)-1), ar.res.ss)
 # ARMA(6,1)
 # ARMA(5,1)
 
-p1.train.w.mean <- p1.data[1:451]
+p1.train.w.mean <- p1.data[1:(length(p1.data)-13)]
 train.mean <- mean(p1.train.w.mean)
 p1.train <- p1.train.w.mean - train.mean
 
@@ -163,35 +163,36 @@ tsdiag(my.arma.5.1)
 
 
 # Predictions
-my.preds.5.3 <- predict(my.arma.5.3, n.ahead = 50, se.fit = TRUE)
-my.preds.7.3 <- predict(my.arma.7.3, n.ahead = 50, se.fit = TRUE)
-my.preds.8.1 <- predict(my.arma.8.1, n.ahead = 50, se.fit = TRUE)
-my.preds.7.1 <- predict(my.arma.7.1, n.ahead = 50, se.fit = TRUE)
-my.preds.5.2 <- predict(my.arma.5.2, n.ahead = 50, se.fit = TRUE)
-my.preds.8.3 <- predict(my.arma.8.3, n.ahead = 50, se.fit = TRUE)
-my.preds.3.3 <- predict(my.arma.3.3, n.ahead = 50, se.fit = TRUE)
-my.preds.4.1 <- predict(my.arma.4.1, n.ahead = 50, se.fit = TRUE)
-my.preds.8.2 <- predict(my.arma.8.2, n.ahead = 50, se.fit = TRUE)
-my.preds.6.1 <- predict(my.arma.6.1, n.ahead = 50, se.fit = TRUE)
-my.preds.5.1 <- predict(my.arma.5.1, n.ahead = 50, se.fit = TRUE)
+my.preds.5.3 <- predict(my.arma.5.3, n.ahead = 13, se.fit = TRUE)
+my.preds.7.3 <- predict(my.arma.7.3, n.ahead = 13, se.fit = TRUE)
+my.preds.8.1 <- predict(my.arma.8.1, n.ahead = 13, se.fit = TRUE)
+my.preds.7.1 <- predict(my.arma.7.1, n.ahead = 13, se.fit = TRUE)
+my.preds.5.2 <- predict(my.arma.5.2, n.ahead = 13, se.fit = TRUE)
+my.preds.8.3 <- predict(my.arma.8.3, n.ahead = 13, se.fit = TRUE)
+my.preds.3.3 <- predict(my.arma.3.3, n.ahead = 13, se.fit = TRUE)
+my.preds.4.1 <- predict(my.arma.4.1, n.ahead = 13, se.fit = TRUE)
+my.preds.8.2 <- predict(my.arma.8.2, n.ahead = 13, se.fit = TRUE)
+my.preds.6.1 <- predict(my.arma.6.1, n.ahead = 13, se.fit = TRUE)
+my.preds.5.1 <- predict(my.arma.5.1, n.ahead = 13, se.fit = TRUE)
 
 # Predictions Error
-sse.5.3 <- sum((p1.data[452:501] - (my.preds.5.3$pred + train.mean))^2)
-sse.7.3 <- sum((p1.data[452:501] - (my.preds.7.3$pred + train.mean))^2)
-sse.8.1 <- sum((p1.data[452:501] - (my.preds.8.1$pred + train.mean))^2)
-sse.7.1 <- sum((p1.data[452:501] - (my.preds.7.1$pred + train.mean))^2)
-sse.5.2 <- sum((p1.data[452:501] - (my.preds.5.2$pred + train.mean))^2)
-sse.8.3 <- sum((p1.data[452:501] - (my.preds.8.3$pred + train.mean))^2)
-sse.3.3 <- sum((p1.data[452:501] - (my.preds.3.3$pred + train.mean))^2)
-sse.4.1 <- sum((p1.data[452:501] - (my.preds.4.1$pred + train.mean))^2)
-sse.8.2 <- sum((p1.data[452:501] - (my.preds.8.2$pred + train.mean))^2)
-sse.6.1 <- sum((p1.data[452:501] - (my.preds.6.1$pred + train.mean))^2)
-sse.5.1 <- sum((p1.data[452:501] - (my.preds.5.1$pred + train.mean))^2)
+sse.5.3 <- sum((p1.data[489:501] - (my.preds.5.3$pred + train.mean))^2)
+sse.7.3 <- sum((p1.data[489:501] - (my.preds.7.3$pred + train.mean))^2)
+sse.8.1 <- sum((p1.data[489:501] - (my.preds.8.1$pred + train.mean))^2)
+sse.7.1 <- sum((p1.data[489:501] - (my.preds.7.1$pred + train.mean))^2)
+sse.5.2 <- sum((p1.data[489:501] - (my.preds.5.2$pred + train.mean))^2)
+sse.8.3 <- sum((p1.data[489:501] - (my.preds.8.3$pred + train.mean))^2)
+sse.3.3 <- sum((p1.data[489:501] - (my.preds.3.3$pred + train.mean))^2)
+sse.4.1 <- sum((p1.data[489:501] - (my.preds.4.1$pred + train.mean))^2)
+sse.8.2 <- sum((p1.data[489:501] - (my.preds.8.2$pred + train.mean))^2)
+sse.6.1 <- sum((p1.data[489:501] - (my.preds.6.1$pred + train.mean))^2)
+sse.5.1 <- sum((p1.data[489:501] - (my.preds.5.1$pred + train.mean))^2)
 
 pred.error <- data.frame(sse.5.3,sse.7.3,sse.8.1,sse.7.1,sse.5.2,sse.8.3,sse.3.3,sse.4.1,sse.8.2,sse.6.1,sse.5.1)
 pred.error[order(pred.error)]
 
 eval.round.1 <- pred.error[order(pred.error)]
+eval.round.2 <- pred.error[order(pred.error)]
 
 # Comparing models close to winner above
 my.comp.arma <- arima(p1.train, order = c(9,0,3), include.mean = FALSE, method = "ML")
@@ -200,10 +201,10 @@ sse.pred.comp <- sum((p1.data[452:501] - (my.comp.pred$pred + train.mean))^2)
 sse.pred.comp
 
 # Indices need to be updated
-plot(400:451, p1.data[400:451], ylim = c(-650, 650), xlim=c(400,502), type="b")
-lines(489:501, (my.preds.5.2$pred + mean(train.mean)), type="b", col="red")
-lines(489:501, (my.preds.5.2$pred + mean(train.mean)) + 2*my.preds.5.2$se, type="l", col="blue")
-lines(489:501, (my.preds.5.2$pred + mean(train.mean)) - 2*my.preds.5.2$se, type="l", col="blue")
+plot(450:488, p1.data[450:488], ylim = c(-650, 650), xlim=c(450,502), type="b")
+lines(489:501, (my.preds.8.1$pred + mean(train.mean)), type="b", col="red")
+lines(489:501, (my.preds.8.1$pred + mean(train.mean)) + 2*my.preds.8.1$se, type="l", col="blue")
+lines(489:501, (my.preds.8.1$pred + mean(train.mean)) - 2*my.preds.8.1$se, type="l", col="blue")
 points(489:501, p1.data[489:501], col="purple")
 
 
