@@ -1,5 +1,5 @@
 ##### Supporting Code for Dataset 1 #####
-setwd('documents/sjsu/265/time-series-project')
+setwd('~/documents/sjsu/265/time-series-project')
 
 p1.data <- scan('proj1.txt')
 p1.data.demean <- p1.data - mean(p1.data)
@@ -43,38 +43,27 @@ library(tseries)
 adf.test(p1.data)
 # Result: reject null hypothesis that the data is not stationary, conclude stationary; no differencing needed
 
-# General AIC analysis of many models up to ARMA(8,2)
+# General AIC analysis of many models up to ARMA(7,10)
 ar.p <- 7
 ma.q <- 10
 
 ar.vec <- rep(0:ar.p, each = (ma.q + 1))
 ma.vec <- rep(seq(0,ma.q), (ar.p + 1))
 
-'''Original code for arima dataframe with error catching
-aic.vec <- vector()
-sig2.vec <- vector()
-loglik.vec <- vector()
-for(p in 1:(ar.p + 1)) {
-    for(q in 1:(ma.q + 1)) {
-        aic.vec <- c(aic.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML"))$aic, error = function(e){NaN}))
-        sig2.vec <- c(sig2.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML"))$sigma2, error = function(e){NaN}))
-        loglik.vec <- c(loglik.vec, tryCatch((arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML"))$loglik, error = function(e){NaN}))
-    }
-}
-'''
 
 aic.vec <- vector()
 sig2.vec <- vector()
 loglik.vec <- vector()
 arma.res.ss <- vector()
 bic.vec <- vector()
-for(p in 1:(ar.p + 1)) {
+# No reason to believe that the AR part should be less than 5
+for(p in 5:(ar.p + 1)) {
     for(q in 1:(ma.q + 1)) {
     	temp.arma <- arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML")
         aic.vec <- c(aic.vec, temp.arma$aic)
         sig2.vec <- c(sig2.vec, temp.arma$sigma2)
         loglik.vec <- c(loglik.vec, temp.arma$loglik)
-        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2))
+        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2)/(length(p1.data) - (p + q) - (p + q + 1)))
         bic.vec <- c(bic.vec, BIC(temp.arma))
     }
 }
@@ -110,7 +99,7 @@ rownames(aic.df.clean.sort) <- 1:nrow(aic.df.clean.sort)
 # Reject: choose the model that has bettre likelihood, aic, sigma2 etc.
 # Reject null hypothesis if following code returns true:
 L1 <- 9 
-L2 <- 10
+L2 <- 14
 nu <- (aic.df.clean.sort$TotalParams[L2] - aic.df.clean.sort$TotalParams[L1])
 ifelse( (aic.df.clean.sort$LL2[L1] - aic.df.clean.sort$LL2[L2]) > (nu + sqrt(2*nu)), 'REJECT the null hypothesis', 'Retain the null hypothesis: choose smaller model')
 
@@ -126,30 +115,25 @@ for(p in 1:13) {
 plot(0:(length(ar.res.ss)-1), ar.res.ss)
 
 ### Candidates
-#     AR MA      AIC      BIC   Sigma2    LogLik   SSres Rank
-# 119 10  8 5309.577 5389.692 2114.304 -2635.788 1059266   79
-# 76   6  9 5315.608 5383.074 2182.558 -2641.804 1093462  117
-# 117 10  6 5316.316 5387.998 2168.644 -2641.158 1086491  121
-# 93   8  4 5314.221 5369.037 2209.413 -2644.110 1106916  124
-# 81   7  3 5313.644 5360.027 2217.462 -2645.822 1110949  125
+# Likelihood ratio test says choose ARMA(5,3) over ARMA(7,3)
+my.arma.7.3 <- arima(p1.data.demean, order = c(7,0,3), include.mean = FALSE, method = "ML")
+my.arma.5.3 <- arima(p1.data.demean, order = c(5,0,3), include.mean = FALSE, method = "ML")
+my.arma.6.9 <- arima(p1.data.demean, order = c(6,0,9), include.mean = FALSE, method = "ML")
+my.arma.7.9 <- arima(p1.data.demean, order = c(7,0,9), include.mean = FALSE, method = "ML")
 
 # Comparing theoretical acf/pacf to sample based on estimated model parameters
 par(mfcol=c(2,2))
-   acf(p1.train, type = c("correlation"))
-   plot(0:25, ARMAacf(ar = my.arma.10.8$coef[1:10], ma = my.arma.10.8$coef[11:18], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
+   acf(p1.data.demean, type = c("correlation"))
+   plot(0:25, ARMAacf(ar = my.arma.7.3$coef[1:7], ma = my.arma.7.3$coef[8:10], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
    abline(h=0)
-   acf(p1.train, type = c("partial"))
-   plot(1:25, ARMAacf(ar = my.arma.10.8$coef[1:10], ma = my.arma.10.8$coef[11:18], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
+   acf(p1.data.demean, type = c("partial"))
+   plot(1:25, ARMAacf(ar = my.arma.7.3$coef[1:7], ma = my.arma.7.3$coef[8:10], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
    abline(h=0)
 par(mfrow=c(1,1)) 
 
 
-# AR(6) - AR(10) Issues:
-# There are a few lags in the acf of the residuals that are close to the boundary
-# Ljung-Box Statistic gets very close to p-value of 0.05 for larger lags. The lower the order, the more tests give p-values that suggest rejecting null
-# Several PACF values were significant at larger lags
 
-##### FINAL MODEL #####
+##### FINAL MODELS...CHOOSE ONE!!! #####
 
 my.arma.final <- arima(p1.data.demean, order = c(6,0,9), include.mean = FALSE)
 
