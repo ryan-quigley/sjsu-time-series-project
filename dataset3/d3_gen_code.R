@@ -1,37 +1,66 @@
 ##### Supporting Code for Dataset 1 #####
 setwd('~/documents/sjsu/265/time-series-project')
 
-p1.data <- scan('proj1.txt')
-p1.data.demean <- p1.data - mean(p1.data)
-
-df <- data.frame(p1.data, p1.data.demean)
+p3.data <- scan('proj3.txt')
 
 ## Visuals original data
-plot(p1.data, type = "b")
+plot(p3.data, type = "b")
 
 par(mfrow=c(2,1))
-   acf(p1.data, type = c("correlation"))
-   acf(p1.data, type = c("partial"))
+   acf(p3.data, type = c("correlation"))
+   acf(p3.data, type = c("partial"))
 par(mfrow=c(1,1))
 
-# Checking whether there appears to be a trend
+# Checking for non-stationarity
+library(tseries)
+adf.test(p3.data)
+# Result: p-value 0.1513
+# Fail to reject null hypothesis, conclude that the data is non-stationary
+
+## Differencing data 1 time
+p3.data.diff <- diff(p3.data, lag = 1)
+
+plot(p3.data.diff, type = "b")
+plot(485:584, p3.data.diff[485:584], type = "b")
+###### Data looks SUSPICIOUSLY like dataset 1 #####
+
+par(mfrow=c(2,1))
+   plot(p1.data, type = "b")
+   plot(p3.data.diff, type = "b")
+par(mfrow=c(1,1))
+
+# Starting at p3.data.dif[49] every point after is 75 less than p1.data
+p3.data.diff[49:549]-p1.data[1:501]
+# PLOT PROVING EXACT RELATIONSHIP
+plot(p3.data.diff, type = "b")
+lines(49:549, (p1.data[1:501] - 75), type = "b", col = "red")
+
+###################################################
+
+par(mfrow=c(2,1))
+   acf(p3.data.diff, type = c("correlation"))
+   acf(p3.data.diff, type = c("partial"))
+par(mfrow=c(1,1))
+
+# Mean stuff
+mean(p3.data)
+
+p3.data.demean <- p3.data - mean(p3.data)
+df <- data.frame(p3.data, p3.data.demean)
+
 library(ggplot2)
-ggplot(df, aes(x = seq(1,length(p1.data)), y = p1.data.demean)) + 
+ggplot(df, aes(x = seq(1,length(p3.data)), y = p3.data.demean)) + 
 geom_line() + 
 geom_point() + 
 geom_smooth()  + 
-geom_line(aes(y = p1.data), colour = 'red') +
-geom_smooth(aes(y = p1.data), colour = 'red')
+geom_line(aes(y = p3.data), colour = 'red') +
+geom_smooth(aes(y = p3.data), colour = 'red')
 
-mean(p1.data)
-# Mean is non-zero
-
-## Visuals demeaned data
-plot(p1.data.demean, type = "b")
+plot(p3.data.demean, type = "b")
 
 par(mfrow=c(2,1))
-   acf(p1.data.demean, type = c("correlation"))
-   acf(p1.data.demean, type = c("partial"))
+   acf(p3.data.demean, type = c("correlation"))
+   acf(p3.data.demean, type = c("partial"))
 par(mfrow=c(1,1))
 
 
@@ -39,9 +68,6 @@ par(mfrow=c(1,1))
 # PACF looks weird up to lag 8, cuts off after that
 
 ##### Candidate Model Analsysis #####
-library(tseries)
-adf.test(p1.data)
-# Result: reject null hypothesis that the data is not stationary, conclude stationary; no differencing needed
 
 # General AIC analysis of many models up to ARMA(7,10)
 ar.p <- 7
@@ -58,11 +84,11 @@ arma.res.ss <- vector()
 bic.vec <- vector()
 for(p in 1:(ar.p + 1)) {
     for(q in 1:(ma.q + 1)) {
-    	temp.arma <- arima(p1.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML")
+    	temp.arma <- arima(p3.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML")
         aic.vec <- c(aic.vec, temp.arma$aic)
         sig2.vec <- c(sig2.vec, temp.arma$sigma2)
         loglik.vec <- c(loglik.vec, temp.arma$loglik)
-        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2)/(length(p1.data) - (p + q) - (p + q + 1)))
+        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2)/(length(p3.data) - (p + q) - (p + q + 1)))
         bic.vec <- c(bic.vec, BIC(temp.arma))
     }
 }
@@ -108,24 +134,24 @@ ifelse( (aic.df.clean.sort$LL2[L1] - aic.df.clean.sort$LL2[L2]) > (nu + sqrt(2*n
 # Plotting residual sum of squares against order to see where curve flattens out: looks like 5 (minor decrease again at 7 but flat afterwards)
 ar.res.ss <- vector(mode = 'numeric')
 for(p in 1:13) {
-	temp.ar <- arima(p1.data.demean, order = c(p-1,0,0), include.mean = FALSE)
+	temp.ar <- arima(p3.data.demean, order = c(p-1,0,0), include.mean = FALSE)
 	ar.res.ss[p-1] <- sum((temp.ar$residuals)^2)
 }
 plot(0:(length(ar.res.ss)-1), ar.res.ss)
 
 ### Candidates
 # Likelihood ratio test says choose ARMA(5,3) over ARMA(7,3)
-my.arma.7.3 <- arima(p1.data.demean, order = c(7,0,3), include.mean = FALSE, method = "ML")
-my.arma.5.3 <- arima(p1.data.demean, order = c(5,0,3), include.mean = FALSE, method = "ML")
-my.arma.6.9 <- arima(p1.data.demean, order = c(6,0,9), include.mean = FALSE, method = "ML")
-my.arma.7.9 <- arima(p1.data.demean, order = c(7,0,9), include.mean = FALSE, method = "ML")
+my.arma.7.3 <- arima(p3.data.demean, order = c(7,0,3), include.mean = FALSE, method = "ML")
+my.arma.5.3 <- arima(p3.data.demean, order = c(5,0,3), include.mean = FALSE, method = "ML")
+my.arma.6.9 <- arima(p3.data.demean, order = c(6,0,9), include.mean = FALSE, method = "ML")
+my.arma.7.9 <- arima(p3.data.demean, order = c(7,0,9), include.mean = FALSE, method = "ML")
 
 # Comparing theoretical acf/pacf to sample based on estimated model parameters
 par(mfcol=c(2,2))
-   acf(p1.data.demean, type = c("correlation"))
+   acf(p3.data.demean, type = c("correlation"))
    plot(0:25, ARMAacf(ar = my.arma.7.3$coef[1:7], ma = my.arma.7.3$coef[8:10], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
    abline(h=0)
-   acf(p1.data.demean, type = c("partial"))
+   acf(p3.data.demean, type = c("partial"))
    plot(1:25, ARMAacf(ar = my.arma.7.3$coef[1:7], ma = my.arma.7.3$coef[8:10], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
    abline(h=0)
 par(mfrow=c(1,1)) 
@@ -134,7 +160,7 @@ par(mfrow=c(1,1))
 
 ##### FINAL MODELS...CHOOSE ONE!!! #####
 
-my.arma.final <- arima(p1.data.demean, order = c(6,0,9), include.mean = FALSE)
+my.arma.final <- arima(p3.data.demean, order = c(6,0,9), include.mean = FALSE)
 
 # CHECK RESIDUALS
 tsdiag(my.arma.final)
@@ -142,7 +168,7 @@ tsdiag(my.arma.final)
 
 my.preds.final <- predict(my.arma.final, n.ahead = 13, se.fit = TRUE)
 
-preds <- my.preds.final$pred + mean(p1.data)
+preds <- my.preds.final$pred + mean(p3.data)
 se <- my.preds.final$se
 lower.bound <- preds - 2*se
 upper.bound <- preds + 2*se
@@ -150,7 +176,7 @@ upper.bound <- preds + 2*se
 cbind(lower.bound, preds, upper.bound)
 
 # Plot predictions
-plot(450:501, p1.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
+plot(450:501, p3.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
 lines(502:514, preds, type="b", col="red")
 lines(502:514, upper.bound, type="l", col="blue")
 lines(502:514, lower.bound, type="l", col="blue")
