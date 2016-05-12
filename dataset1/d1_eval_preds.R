@@ -10,8 +10,7 @@
 
 
 # End can be at most 488
-#16 28 58
-end <- 457
+end <- 501
 
 p1.train.w.mean <- p1.data[1:end]
 train.mean <- mean(p1.train.w.mean)
@@ -31,6 +30,10 @@ my.preds.7.3 <- predict(my.arma.7.3, n.ahead = 13, se.fit = TRUE)my.preds.5.3 <
 # Predictions Error
 sse.7.3 <- sum((p1.data[(end + 1):(end + 13)] - (my.preds.7.3$pred + train.mean))^2)sse.5.3 <- sum((p1.data[(end + 1):(end + 13)] - (my.preds.5.3$pred + train.mean))^2)sse.6.9 <- sum((p1.data[(end + 1):(end + 13)] - (my.preds.6.9$pred + train.mean))^2)sse.5.2 <- sum((p1.data[(end + 1):(end + 13)] - (my.preds.5.2$pred + train.mean))^2)sse.7.1 <- sum((p1.data[(end + 1):(end + 13)] - (my.preds.7.1$pred + train.mean))^2)sse.5.1 <- sum((p1.data[(end + 1):(end + 13)] - (my.preds.5.1$pred + train.mean))^2)sse.7.9 <- sum((p1.data[(end + 1):(end + 13)] - (my.preds.7.9$pred + train.mean))^2)
 
+# Prediction Error for actual values pulled from p3.data.diff
+sse.7.3 <- sum((p3.data.diff[550:562] - (my.preds.7.3$pred + train.mean))^2)sse.5.3 <- sum((p3.data.diff[550:562] - (my.preds.5.3$pred + train.mean))^2)sse.6.9 <- sum((p3.data.diff[550:562] - (my.preds.6.9$pred + train.mean))^2)sse.5.2 <- sum((p3.data.diff[550:562] - (my.preds.5.2$pred + train.mean))^2)sse.7.1 <- sum((p3.data.diff[550:562] - (my.preds.7.1$pred + train.mean))^2)sse.5.1 <- sum((p3.data.diff[550:562] - (my.preds.5.1$pred + train.mean))^2)sse.7.9 <- sum((p3.data.diff[550:562] - (my.preds.7.9$pred + train.mean))^2)
+# ARMA(5,3) wins!!!!
+
 pred.error <- data.frame(sse.7.3, sse.5.3, sse.6.9, sse.5.2, sse.7.1, sse.5.1, sse.7.9)
 pred.error[order(pred.error)]
 
@@ -45,6 +48,8 @@ lines((end + 1):(end + 13), preds, type="b", col="green")
 lines((end + 1):(end + 13), preds + 2*se, type="l", col="green")
 lines((end + 1):(end + 13), preds - 2*se, type="l", col="green")
 lines((end + 13 + 1):(end + 13 + 11), p1.data[(end + 13 + 1):(end + 13 + 11)], type = "b")
+
+
 
 # 410 suggests ARMA(6,9)
 ##### 415 suggests ARMA(7,9)

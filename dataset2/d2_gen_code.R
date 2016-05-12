@@ -2,12 +2,17 @@
 setwd('~/documents/sjsu/265/time-series-project')
 
 p2.data <- scan('proj2.txt')
-p2.data.demean <- p2.data - mean(p2.data)
 
+# Mean is non-zero
+mean(p2.data)
+p2.data.demean <- p2.data - mean(p2.data)
 df <- data.frame(p2.data, p2.data.demean)
 
-## Visuals original data
-plot(1000:1100, p2.data[1000:1100], type = "b")
+### Visuals original data
+for (i in seq(0,14)) {
+plot((1 + i*100):(100 + i*100), p2.data[(1 + i*100):(100 + i*100)], type = "b")
+}
+
 # Maybe two periods in the data; need at least an AR(3)
 # Peak counting suggests maybe a period of 6
 
@@ -16,7 +21,19 @@ par(mfrow=c(2,1))
    acf(p2.data, type = c("partial"))
 par(mfrow=c(1,1))
 
-# Checking whether there appears to be a trend
+### Periodogram
+spec.pgram(p2.data.demean, spans = 5, taper = .1)
+# Looks like ARMA(3,3)
+
+### Visuals demeaned data
+plot(p2.data.demean, type = "b")
+
+par(mfrow=c(2,1))
+   acf(p2.data.demean, type = c("correlation"))
+   acf(p2.data.demean, type = c("partial"))
+par(mfrow=c(1,1))
+
+### Trend check
 library(ggplot2)
 ggplot(df, aes(x = seq(1,length(p2.data)), y = p2.data.demean)) + 
 geom_line() + 
@@ -24,17 +41,6 @@ geom_point() +
 geom_smooth()  + 
 geom_line(aes(y = p2.data), colour = 'red') +
 geom_smooth(aes(y = p2.data), colour = 'red')
-
-mean(p2.data)
-# Mean is non-zero
-
-## Visuals demeaned data
-plot(p2.data.demean, type = "b")
-
-par(mfrow=c(2,1))
-   acf(p2.data.demean, type = c("correlation"))
-   acf(p2.data.demean, type = c("partial"))
-par(mfrow=c(1,1))
 
 
 # Starting at lag 3 there is a pattern: short, negligible, large; the pattern switches sign every 3 
@@ -46,13 +52,13 @@ library(tseries)
 adf.test(p2.data)
 # Result: reject null hypothesis that the data is not stationary, conclude stationary; no differencing needed
 
-# General AIC analysis of many models up to ARMA(7,10)
-ar.p <- 9
-ma.q <- 10
+
+# General AIC analysis of many models up to ARMA(6,6)
+ar.p <- 6
+ma.q <- 6
 
 ar.vec <- rep(0:ar.p, each = (ma.q + 1))
 ma.vec <- rep(seq(0,ma.q), (ar.p + 1))
-
 
 aic.vec <- vector()
 sig2.vec <- vector()
@@ -87,60 +93,65 @@ for (i in 3:7) {
 }
 testy <- testy[order(testy$Rank),]
 
-### Prep for log likelihood ratios
-aic.df.clean <- aic.df[aic.df$AIC != 'NaN',]
-aic.df.clean$AICchange <- round(100*(aic.df.clean$AIC - min(aic.df.clean$AIC))/min(aic.df.clean$AIC), digits = 2)
-aic.df.clean$LL2 <- -2*aic.df.clean$LogLik
-aic.df.clean$TotalParams <- aic.df.clean$AR + aic.df.clean$MA
-aic.df.clean.sort <- aic.df.clean[order(aic.df.clean$AIC),]
-rownames(aic.df.clean.sort) <- 1:nrow(aic.df.clean.sort)
+
+
+### Log Likelihood Ratios
+llr.df <- testy
+llr.df$TotalParams <- llr.df$AR + llr.df$MA
+rownames(llr.df) <- 1:nrow(llr.df)
 
 # Log likelihood tests: numerator L1 needs to be a subset of L2
 # Null hypothesis: the models are equivalent
 # Retain: choose the model that is smaller
 # Reject: choose the model that has bettre likelihood, aic, sigma2 etc.
 # Reject null hypothesis if following code returns true:
-L1 <- 1 
-L2 <- 19
-nu <- (aic.df.clean.sort$TotalParams[L2] - aic.df.clean.sort$TotalParams[L1])
-ifelse( (aic.df.clean.sort$LL2[L1] - aic.df.clean.sort$LL2[L2]) > (nu + sqrt(2*nu)), 'REJECT the null hypothesis', 'Retain the null hypothesis: choose smaller model')
+L1 <- 6 
+L2 <- 10
+nu <- (llr.df$TotalParams[L2] - llr.df$TotalParams[L1])
+llr <- -2*llr.df$LogLik[L1] + 2*llr.df$LogLik[L2]
+ifelse(llr  > (nu + sqrt(2*nu)), 'REJECT the null hypothesis', 'Retain the null hypothesis: choose smaller model')
+pchisq(q = llr,df = nu, lower.tail = FALSE)
+
 
 ### END Likelihood ratio code
 
 
+
 # Plotting residual sum of squares against order to see where curve flattens out: looks like 5 (minor decrease again at 7 but flat afterwards)
 ar.res.ss <- vector(mode = 'numeric')
-for(p in 1:13) {
+for(p in 1:10) {
 	temp.ar <- arima(p2.data.demean, order = c(p-1,0,0), include.mean = FALSE)
 	ar.res.ss[p-1] <- sum((temp.ar$residuals)^2)
 }
 plot(0:(length(ar.res.ss)-1), ar.res.ss)
 
 ### Candidates
-# Likelihood ratio test says choose ARMA(3,3) over: ARMA(3,4), ARMA(3,5), ARMA(5,3) 
-my.arma.3.5 <- arima(p2.data.demean, order = c(3,0,5), include.mean = FALSE, method = "ML")
-my.arma.5.3 <- arima(p2.data.demean, order = c(5,0,3), include.mean = FALSE, method = "ML")
-my.arma.3.3 <- arima(p2.data.demean, order = c(3,0,3), include.mean = FALSE, method = "ML")
 
+# Comparing theoretical spectrum for estimated coefficients
+source("~/Desktop/spectrum_analysis.R")
+par(mfrow=c(2,1))
+   spec.pgram(p2.data) 
+   my.spectrum(phi.of.b=c(1, -my.arma.3.3$coef[1:3]), theta.of.b=c(1, my.arma.3.3$coef[4:6]), variance= my.arma.3.3$sigma2)
+par(mfrow=c(1,1))
+# ARMA(3,3) looks beautiful
 
 # Comparing theoretical acf/pacf to sample based on estimated model parameters
 par(mfcol=c(2,2))
    acf(p2.data.demean, type = c("correlation"))
-   plot(0:30, ARMAacf(ar = my.arma.5.3$coef[1:5], ma = my.arma.5.3$coef[6:8], lag.max=30), type="h", xlab = "Lag", ylab = "Theoretical ACF")
+   plot(0:30, ARMAacf(ar = my.arma.3.3$coef[1:3], ma = my.arma.3.3$coef[4:6], lag.max=30), type="h", xlab = "Lag", ylab = "Theoretical ACF")
    abline(h=0)
    acf(p2.data.demean, type = c("partial"))
-   plot(1:30, ARMAacf(ar = my.arma.5.3$coef[1:5], ma = my.arma.5.3$coef[6:8], lag.max=30, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
+   plot(1:30, ARMAacf(ar = my.arma.3.3$coef[1:3], ma = my.arma.3.3$coef[4:6], lag.max=30, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
    abline(h=0)
-par(mfrow=c(1,1)) 
-
-# my.arma.3.5 looks to be spot on with the theoretical acf/pacf
-# my.arma.3.3 also very good but the magnitude of the small ones is a little off
-# my.arma.5.3 looks to be spot just as good as 3.5
+par(mfrow=c(1,1))
+# ARMA(3,3) looks beautiful
 
 
+
+###################################################################################################################
 ##### FINAL MODELS...CHOOSE ONE!!! #####
 
-my.arma.final <- arima(p2.data.demean, order = c(6,0,9), include.mean = FALSE)
+my.arma.final <- arima(p2.data.demean, order = c(3,0,3), include.mean = FALSE)
 
 # CHECK RESIDUALS
 tsdiag(my.arma.final)
@@ -153,10 +164,20 @@ se <- my.preds.final$se
 lower.bound <- preds - 2*se
 upper.bound <- preds + 2*se
 
-cbind(lower.bound, preds, upper.bound)
-
 # Plot predictions
-plot(450:501, p2.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
-lines(502:514, preds, type="b", col="red")
-lines(502:514, upper.bound, type="l", col="blue")
-lines(502:514, lower.bound, type="l", col="blue")
+plot(1450:1500, p2.data[1450:1500], ylim = c(100, 300), xlim=c(1450,1515), type="b")
+lines(1501:1513, preds, type="b", col="blue")
+lines(1501:1513, upper.bound, type="l", col="blue")
+lines(1501:1513, lower.bound, type="l", col="blue")
+
+p2.final.plot.df <- data.frame(t = c(1450:1500), y = p2.data[1450:1500])
+p2.final.preds.df <- data.frame(t = c(1500:1513), lb = c(p2.data[1500],lower.bound), preds = c(p2.data[1500],preds), ub = c(p2.data[1500],upper.bound))
+
+library(ggplot2)
+ggplot(p2.final.preds.df, aes(x = t, y = preds)) +
+geom_ribbon(aes(ymin = lb, ymax = ub), fill = "light blue", alpha = 0.6) +
+geom_line(colour = "blue") + 
+geom_point(colour = "blue") +
+geom_line(data = p2.final.plot.df, aes(x=t,y=y)) +
+geom_point(data = p2.final.plot.df, aes(x=t,y=y)) +
+theme_bw()

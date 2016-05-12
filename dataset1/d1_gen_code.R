@@ -134,6 +134,7 @@ par(mfrow=c(1,1))
 
 
 ##### FINAL MODELS...CHOOSE ONE!!! #####
+# p3.data[550:562] are the actual 13 values
 
 my.arma.final <- arima(p1.data.demean, order = c(6,0,9), include.mean = FALSE)
 
@@ -155,3 +156,4 @@ plot(450:501, p1.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
 lines(502:514, preds, type="b", col="red")
 lines(502:514, upper.bound, type="l", col="blue")
 lines(502:514, lower.bound, type="l", col="blue")
+points(502:514, p3.data.diff[550:562])

@@ -31,9 +31,11 @@ par(mfrow=c(1,1))
 
 # Starting at p3.data.dif[49] every point after is 75 less than p1.data
 p3.data.diff[49:549]-p1.data[1:501]
+
 # PLOT PROVING EXACT RELATIONSHIP
-plot(p3.data.diff, type = "b")
+plot(p3.data.diff, type = "b", main = "Relationship Between Project 1 and 3", ylab = "Data", xlab = "Time")
 lines(49:549, (p1.data[1:501] - 75), type = "b", col = "red")
+legend(0,600, c("Project 3: Differenced", "Project 1: Shifted"), lty=c(1,1), col=c("black", "red"))
 
 ###################################################
 
