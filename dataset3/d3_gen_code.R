@@ -19,9 +19,11 @@ adf.test(p3.data)
 
 ## Differencing data 1 time
 p3.data.diff <- diff(p3.data, lag = 1)
+adf.test(p3.data.diff)
 
 plot(p3.data.diff, type = "b")
 plot(485:584, p3.data.diff[485:584], type = "b")
+
 ###### Data looks SUSPICIOUSLY like dataset 1 #####
 
 par(mfrow=c(2,1))
@@ -44,36 +46,30 @@ par(mfrow=c(2,1))
    acf(p3.data.diff, type = c("partial"))
 par(mfrow=c(1,1))
 
-# Mean stuff
-mean(p3.data)
+# Periodogram
+spec.pgram(p3.data.diff, spans = 5, taper = .1)
+# Looks like ARMA(3,0)
 
-p3.data.demean <- p3.data - mean(p3.data)
-df <- data.frame(p3.data, p3.data.demean)
+# Mean stuff
+mean(p3.data.diff)
+p3.data.diff.demean <- p3.data.diff - mean(p3.data.diff)
+
+df <- data.frame(p3.data.diff, p3.data.diff.demean)
 
 library(ggplot2)
-ggplot(df, aes(x = seq(1,length(p3.data)), y = p3.data.demean)) + 
-geom_line() + 
-geom_point() + 
-geom_smooth()  + 
-geom_line(aes(y = p3.data), colour = 'red') +
-geom_smooth(aes(y = p3.data), colour = 'red')
-
-plot(p3.data.demean, type = "b")
-
-par(mfrow=c(2,1))
-   acf(p3.data.demean, type = c("correlation"))
-   acf(p3.data.demean, type = c("partial"))
-par(mfrow=c(1,1))
-
-
-# ACF exhibits sinusoidal decay
-# PACF looks weird up to lag 8, cuts off after that
+ggplot(df, aes(x = seq(1,length(p3.data.diff)), y = p3.data.diff)) + 
+	geom_line() + 
+	geom_point() + 
+	geom_smooth() +
+	geom_line(aes(y = p3.data.diff.demean), col = "red") + 
+	geom_point(aes(y = p3.data.diff.demean), col = "red") + 
+	geom_smooth(aes(y = p3.data.diff.demean), col = "red")
 
 ##### Candidate Model Analsysis #####
 
 # General AIC analysis of many models up to ARMA(7,10)
-ar.p <- 7
-ma.q <- 10
+ar.p <- 5
+ma.q <- 5
 
 ar.vec <- rep(0:ar.p, each = (ma.q + 1))
 ma.vec <- rep(seq(0,ma.q), (ar.p + 1))
@@ -86,11 +82,11 @@ arma.res.ss <- vector()
 bic.vec <- vector()
 for(p in 1:(ar.p + 1)) {
     for(q in 1:(ma.q + 1)) {
-    	temp.arma <- arima(p3.data.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML")
+    	temp.arma <- arima(p3.data.diff.demean, order = c(p-1, 0, q-1), include.mean = FALSE, method = "ML")
         aic.vec <- c(aic.vec, temp.arma$aic)
         sig2.vec <- c(sig2.vec, temp.arma$sigma2)
         loglik.vec <- c(loglik.vec, temp.arma$loglik)
-        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2)/(length(p3.data) - (p + q) - (p + q + 1)))
+        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2)/(length(p3.data.diff.demean) - (p + q) - (p + q + 1)))
         bic.vec <- c(bic.vec, BIC(temp.arma))
     }
 }
@@ -112,57 +108,60 @@ for (i in 3:7) {
 }
 testy <- testy[order(testy$Rank),]
 
-### Prep for log likelihood ratios
-aic.df.clean <- aic.df[aic.df$AIC != 'NaN',]
-aic.df.clean$AICchange <- round(100*(aic.df.clean$AIC - min(aic.df.clean$AIC))/min(aic.df.clean$AIC), digits = 2)
-aic.df.clean$LL2 <- -2*aic.df.clean$LogLik
-aic.df.clean$TotalParams <- aic.df.clean$AR + aic.df.clean$MA
-aic.df.clean.sort <- aic.df.clean[order(aic.df.clean$AIC),]
-rownames(aic.df.clean.sort) <- 1:nrow(aic.df.clean.sort)
+### Log Likelihood Ratios
+llr.df <- testy
+llr.df$TotalParams <- llr.df$AR + llr.df$MA
+rownames(llr.df) <- 1:nrow(llr.df)
 
 # Log likelihood tests: numerator L1 needs to be a subset of L2
 # Null hypothesis: the models are equivalent
 # Retain: choose the model that is smaller
 # Reject: choose the model that has bettre likelihood, aic, sigma2 etc.
 # Reject null hypothesis if following code returns true:
-L1 <- 9 
-L2 <- 14
-nu <- (aic.df.clean.sort$TotalParams[L2] - aic.df.clean.sort$TotalParams[L1])
-ifelse( (aic.df.clean.sort$LL2[L1] - aic.df.clean.sort$LL2[L2]) > (nu + sqrt(2*nu)), 'REJECT the null hypothesis', 'Retain the null hypothesis: choose smaller model')
+L1 <- 20
+L2 <- 4
+nu <- (llr.df$TotalParams[L2] - llr.df$TotalParams[L1])
+llr <- -2*llr.df$LogLik[L1] + 2*llr.df$LogLik[L2]
+ifelse(llr  > (nu + sqrt(2*nu)), 'REJECT the null hypothesis', 'Retain the null hypothesis: choose smaller model')
+pchisq(q = llr,df = nu, lower.tail = FALSE)
+
+# Tests suggest ARMA(3,1) wins over (5,1), (3,3), (3,0), (4,1), (3,2): p-values greater than 0.50
 
 ### END Likelihood ratio code
 
 
-# Plotting residual sum of squares against order to see where curve flattens out: looks like 5 (minor decrease again at 7 but flat afterwards)
+# Plotting residual sum of squares against order to see where curve flattens out
 ar.res.ss <- vector(mode = 'numeric')
-for(p in 1:13) {
-	temp.ar <- arima(p3.data.demean, order = c(p-1,0,0), include.mean = FALSE)
+for(p in 1:7) {
+	temp.ar <- arima(p3.data.diff.demean, order = c(p-1,0,0), include.mean = FALSE)
 	ar.res.ss[p-1] <- sum((temp.ar$residuals)^2)
 }
 plot(0:(length(ar.res.ss)-1), ar.res.ss)
 
 ### Candidates
-# Likelihood ratio test says choose ARMA(5,3) over ARMA(7,3)
-my.arma.7.3 <- arima(p3.data.demean, order = c(7,0,3), include.mean = FALSE, method = "ML")
-my.arma.5.3 <- arima(p3.data.demean, order = c(5,0,3), include.mean = FALSE, method = "ML")
-my.arma.6.9 <- arima(p3.data.demean, order = c(6,0,9), include.mean = FALSE, method = "ML")
-my.arma.7.9 <- arima(p3.data.demean, order = c(7,0,9), include.mean = FALSE, method = "ML")
+# Comparing theoretical spectrum for estimated coefficients
+source("~/Desktop/spectrum_analysis.R")
+par(mfrow=c(2,1))
+   spec.pgram(p2.data) 
+   my.spectrum(phi.of.b=c(1, -my.arma.3.1$coef[1:3]), theta.of.b=c(1, my.arma.3.1$coef[4:5]), variance= my.arma.3.1$sigma2)
+par(mfrow=c(1,1))
 
 # Comparing theoretical acf/pacf to sample based on estimated model parameters
 par(mfcol=c(2,2))
    acf(p3.data.demean, type = c("correlation"))
-   plot(0:25, ARMAacf(ar = my.arma.7.3$coef[1:7], ma = my.arma.7.3$coef[8:10], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
+   plot(0:25, ARMAacf(ar = my.arma.3.1$coef[1:3], ma = my.arma.3.1$coef[4:5], lag.max=25), type="h", xlab = "Lag", ylab = "Theoretical ACF")
    abline(h=0)
    acf(p3.data.demean, type = c("partial"))
-   plot(1:25, ARMAacf(ar = my.arma.7.3$coef[1:7], ma = my.arma.7.3$coef[8:10], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
+   plot(1:25, ARMAacf(ar = my.arma.3.1$coef[1:3], ma = my.arma.3.1$coef[4:5], lag.max=25, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
    abline(h=0)
 par(mfrow=c(1,1)) 
 
 
 
+###################################################################################################################
 ##### FINAL MODELS...CHOOSE ONE!!! #####
 
-my.arma.final <- arima(p3.data.demean, order = c(6,0,9), include.mean = FALSE)
+my.arma.final <- arima(p3.data, order = c(3,1,1), include.mean = FALSE, method = "ML")
 
 # CHECK RESIDUALS
 tsdiag(my.arma.final)
@@ -170,15 +169,23 @@ tsdiag(my.arma.final)
 
 my.preds.final <- predict(my.arma.final, n.ahead = 13, se.fit = TRUE)
 
-preds <- my.preds.final$pred + mean(p3.data)
+preds <- my.preds.final$pred
 se <- my.preds.final$se
 lower.bound <- preds - 2*se
 upper.bound <- preds + 2*se
 
 cbind(lower.bound, preds, upper.bound)
 
-# Plot predictions
-plot(450:501, p3.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
-lines(502:514, preds, type="b", col="red")
-lines(502:514, upper.bound, type="l", col="blue")
-lines(502:514, lower.bound, type="l", col="blue")
+
+p3.final.plot.df <- data.frame(t = c(500:584), y = p3.data[500:584])
+p3.final.preds.df <- data.frame(t = c(584:597), lb = c(p3.data[584],lower.bound), preds = c(p3.data[584],preds), ub = c(p3.data[584],upper.bound))
+
+# Add legend!!!
+library(ggplot2)
+	ggplot(p3.final.preds.df, aes(x = t, y = preds)) +
+	geom_ribbon(aes(ymin = lb, ymax = ub), fill = "light blue", alpha = 0.6) +
+	geom_line(colour = "blue") + 
+	geom_point(colour = "blue") +
+	geom_line(data = p3.final.plot.df, aes(x=t,y=y)) +
+	geom_point(data = p3.final.plot.df, aes(x=t,y=y)) +
+	theme_bw()
