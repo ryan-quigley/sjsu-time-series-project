@@ -135,14 +135,19 @@ par(mfrow=c(1,1))
 
 ##### FINAL MODELS...CHOOSE ONE!!! #####
 # p3.data[550:562] are the actual 13 values
+mean(p1.data)
 
-my.arma.final <- arima(p1.data.demean, order = c(6,0,9), include.mean = FALSE)
+my.arma.final <- arima(p1.data.demean, order = c(3,0,1), include.mean = FALSE, method = "ML")
+my.arma.final.m <- arima(p1.data, order = c(3,0,1), include.mean = TRUE, method = "ML")
+
 
 # CHECK RESIDUALS
-tsdiag(my.arma.final)
+# tsdiag(my.arma.final)
 # Final 13 predictions
 
 my.preds.final <- predict(my.arma.final, n.ahead = 13, se.fit = TRUE)
+my.preds.final.m <- predict(my.arma.final.m, n.ahead = 13, se.fit = TRUE)
+
 
 preds <- my.preds.final$pred + mean(p1.data)
 se <- my.preds.final$se
@@ -154,6 +159,36 @@ cbind(lower.bound, preds, upper.bound)
 # Plot predictions
 plot(450:501, p1.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
 lines(502:514, preds, type="b", col="red")
-lines(502:514, upper.bound, type="l", col="blue")
-lines(502:514, lower.bound, type="l", col="blue")
+lines(502:514, upper.bound, type="l", col="red")
+lines(502:514, lower.bound, type="l", col="red")
 points(502:514, p3.data.diff[550:562])
+
+preds <- my.preds.final.m$pred
+se <- my.preds.final.m$se
+lower.bound <- preds - 2*se
+upper.bound <- preds + 2*se
+
+
+lines(502:514, preds, type="b", col="green")
+lines(502:514, upper.bound, type="l", col="green")
+lines(502:514, lower.bound, type="l", col="green")
+
+##########################
+# Predictions Drawn from dataset 3
+p3.data.diff[550:562]+75
+
+plot(450:501, p1.data[450:501], ylim = c(-650, 650), xlim=c(450,515), type="b")
+points(502:514, p3.data.diff[550:562]+75)
+
+par(mfrow=c(2,1))
+	acf(p1.data, type = c("correlation"), main = "ACF: Dataset 1")
+	acf(p3.data.diff, type = c("correlation"), main = "ACF: Dataset 3 Lag-1 Difference")
+par(mfrow=c(1,1))
+par(mfrow=c(2,1))
+	acf(p1.data, type = c("partial"), main = "PACF: Dataset 1")
+	acf(p3.data.diff, type = c("partial"), main = "PACF: Dataset 3 Lag-1 Difference")
+par(mfrow=c(1,1))
+par(mfrow=c(2,1))
+	spec.pgram(p1.data, taper = .1, main = "Periodogram: Dataset 1", ylab = "")
+	spec.pgram(p3.data.diff, taper = .1, main = "Periodogram: Dataset 3 Lag-1 Difference", ylab = "")
+par(mfrow=c(1,1))
