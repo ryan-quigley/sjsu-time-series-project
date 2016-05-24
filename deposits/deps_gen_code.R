@@ -19,13 +19,13 @@ plot((1 + i*100):(100 + i*100), deps.data[(1 + i*100):(100 + i*100)], type = "b"
 
 ### ACF/PACF
 par(mfrow=c(2,1))
-   acf(deps.data, type = c("correlation"), lag.max = 50)
+   acf(deps.data, type = c("correlation"), lag.max = 50, main = "Sample ACF of Original Series")
    acf(deps.data, type = c("partial"))
 par(mfrow=c(1,1))
 
 par(mfrow=c(2,1))
-   acf(deps.dlog, type = c("correlation"))
-   acf(deps.dlog, type = c("partial"))
+   acf(deps.dlog, type = c("correlation"), main = "Sample ACF of Lag-1 Differenced Log-Series")
+   acf(deps.dlog, type = c("partial"), main = "Sample PACF of Lag-1 Differenced Log-Series")
 par(mfrow=c(1,1))
 # Looks like MA(1)
 # PACF shows decay which is typical of an MA process
@@ -39,7 +39,7 @@ par(mfrow=c(1,1))
 
 
 ### Periodogram
-spec.pgram(deps.dlog, taper = .1)
+spec.pgram(deps.dlog, taper = .1, main = "Periodogram", ylab = "periodogram")
 spec.pgram(deps.dlog, spans = 5, taper = .1)
 # Looks like an MA(1)
 spec.pgram(deps.diff, taper = .1)
@@ -53,9 +53,11 @@ spec.pgram(deps.log, spans = 5, taper = .1)
 
 library(tseries)
 adf.test(deps.data)
+pp.test(desp.data)
 # Result: reject null hypothesis that the data is not stationary, conclude stationary; no differencing needed
 # ...weird...we "know"/suspect the data to be non-stationary
 adf.test(deps.dlog)
+pp.test(deps.dlog)
 # Result: reject null hypothesis that the data is not stationary, conclude stationary; no differencing needed
 adf.test(deps.log)
 # Result: close to not rejecting the null hypothesis...p-value = 0.055
@@ -90,6 +92,8 @@ preds.og <- exp(preds)
 lower.bound.og <- exp(preds - 2*se)
 upper.bound.og <- exp(preds + 2*se)
 
+cbind(preds.og, lower.bound.og, upper.bound.og)
+
 # Plot predictions
 # plot(600:624, deps.data[600:624], ylim = c(0, 60), xlim=c(600,640), type="b")
 # lines(625:637, preds.og, type="b", col="blue")
@@ -102,9 +106,13 @@ deps.final.preds.df <- data.frame(t = c(624:637), lb = c(deps.data[624],lower.bo
 # Add legend!!!!
 library(ggplot2)
 ggplot(deps.final.preds.df, aes(x = t, y = preds)) +
-	geom_ribbon(aes(ymin = lb, ymax = ub), fill = "light blue", alpha = 0.6) +
-	geom_line(colour = "blue") + 
-	geom_point(colour = "blue") +
-	geom_line(data = deps.final.plot.df, aes(x=t,y=y)) +
-	geom_point(data = deps.final.plot.df, aes(x=t,y=y)) +
-	theme_bw()
+	geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Prediction Interval"), , alpha = 0.6) +
+	geom_line(aes(colour = "Forecasts")) + 
+	geom_point(aes(colour = "Forecasts")) +
+	geom_line(data = deps.final.plot.df , aes(x=t,y=y, colour = "Original Data")) +
+	geom_point(data = deps.final.plot.df , aes(x=t,y=y, colour = "Original Data")) +
+	scale_colour_manual("", values= c("blue","black"))+
+    scale_fill_manual("", values = "light blue") +
+	labs(title = "Forecasts 13 Steps Ahead", x = "Time", y = "Data") +
+	theme_bw() +
+	theme(legend.key = element_blank())

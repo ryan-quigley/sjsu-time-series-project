@@ -72,14 +72,15 @@ plot(0:(length(ar.res.ss)-1), ar.res.ss)
 ###################################################################################################################
 ##### FINAL MODELS...CHOOSE ONE!!! #####
 
-my.arma.final <- arima(p2.data.demean, order = c(3,0,3), include.mean = FALSE)
+my.arma.final <- arima(p2.data.demean, order = c(3,0,3), include.mean = FALSE, method = "ML")
 
 # CHECK RESIDUALS
-tsdiag(my.arma.final)
+tsdiag(my.arma.final2)
 qqnorm(my.arma.final$residuals)
 # Final 13 predictions
 
 my.preds.final <- predict(my.arma.final, n.ahead = 13, se.fit = TRUE)
+
 
 preds <- my.preds.final$pred + mean(p2.data)
 se <- my.preds.final$se
@@ -93,6 +94,7 @@ plot(1450:1500, p2.data[1450:1500], ylim = c(100, 300), xlim=c(1450,1515), type=
 lines(1501:1513, preds, type="b", col="blue")
 lines(1501:1513, upper.bound, type="l", col="blue")
 lines(1501:1513, lower.bound, type="l", col="blue")
+
 
 p2.final.plot.df <- data.frame(t = c(1450:1500), y = p2.data[1450:1500])
 p2.final.preds.df <- data.frame(t = c(1500:1513), lb = c(p2.data[1500],lower.bound), preds = c(p2.data[1500],preds), ub = c(p2.data[1500],upper.bound))

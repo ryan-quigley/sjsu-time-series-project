@@ -10,11 +10,13 @@ setwd('~/documents/sjsu/265/time-series-project')
 hp.data <- read.table('HomePrice.txt', header = TRUE)
 ### Potential regressors: median household income
 med.inc <- read.csv('fred_med_house_inc.csv', sep = ',', header = TRUE)
+med.inc$date <- ymd(med.inc$date)
 med.inc <- med.inc[-c(1:3),]
 
 ### Adding in months
 library(lubridate)
-hp.data$month <- month(mdy(hp.data$date))
+hp.data$date <- mdy(hp.data$date)
+hp.data$month <- month(hp.data$date)
 hp.data$month_label <- month(hp.data$month, label = TRUE)
 
 ### Transforming the data
@@ -52,16 +54,27 @@ lines(seq(1,325,12), med.inc$median, col = "blue", type = "b")
 axis(side = 1, at = seq(1,length(hp.data$index), 12), labels = as.character(hp.data$date[seq(1,length(hp.data$index), 12)]) )
 
 library(ggplot2)
-ggplot(data = hp.data, aes(x = 1:dim(hp.data)[1], y = index, color = month_label)) +
+ggplot(data = data.frame(hp.data[hp.data$date >= "1990-01-01" & hp.data$date < "2001-01-01",]), aes(x = date, y = index, colour = month_label)) +
+	geom_line(data = data.frame(med.inc[med.inc$date >= "1990-01-01" & med.inc$date <= "2001-01-01",]), aes(x = date, y = real.median), colour = "black") +
 	geom_point() +
+	guides(colour = guide_legend("Month")) +
+	scale_x_date(date_breaks = "1 year", date_labels = "%y") +
+	labs(title = "Case-Shiller Home Price Index", x = "Year", y = "Index") +
 	theme_bw() +
-	geom_line(data = med.inc, aes(x = seq(1,325,12), y = real.median), color = "blue") +
-	geom_line(data = med.inc, aes(x = seq(1,325,12), y = median), color = "red")
+	theme(legend.key = element_blank())
+	
+ggplot(data = data.frame(hp.data[hp.data$date >= "2001-01-01" & hp.data$date < "2008-01-01",]), aes(x = date, y = index, colour = month_label)) +
+	geom_point() +
+	guides(colour = guide_legend("Month")) +
+	scale_x_date(date_breaks = "1 year", date_labels = "%y") +
+	labs(title = "Case-Shiller Home Price Index", x = "Year", y = "Index") +
+	theme_bw() +
+	theme(legend.key = element_blank())
 
 ggplot(data = data.frame(hp.data[1:200,]), aes(x = 1:200, y = index, color = month_label)) +
 	geom_point() +
 	theme_bw()
-# Looks to start August-September 1998
+# Looks to start January 1998
 
 plot(hp.data.diff, type = "b")
 
@@ -77,11 +90,17 @@ plot(hp.data.diff.12, type = "b")
 
 
 #### Is today a good time to buy?
-ggplot(data = data.frame(hp.data[220:dim(hp.data)[1],]), aes(x = 220:dim(hp.data)[1], y = index, color = month_label)) +
-	geom_line(aes(y = index), color = "black", alpha = 0.2) +
+ggplot(data = data.frame(date = hp.data[-1,1], diff.index = hp.data.diff), aes(x = date, y = diff.index)) +
+	geom_line() +
 	geom_point() +
+	scale_x_date(date_breaks = "1 year", date_labels = "%y") +
+	labs(title = "Case-Shiller Home Price Index", x = "Year", y = "Index: Lag-1 Difference") +
 	theme_bw()
 
-ggplot(data = data.frame(hp.data[1:200,]), aes(x = 1:200, y = index, color = month_label)) +
+ggplot(data = data.frame(hp.data[hp.data$date > "2008-12-01",]), aes(x = date, y = index, color = month_label)) +
 	geom_point() +
-	theme_bw()
+	guides(colour = guide_legend("Month")) +
+	scale_x_date(date_breaks = "1 year", date_labels = "%y") +
+	labs(title = "Case-Shiller Home Price Index", x = "Year", y = "Index") +
+	theme_bw() +
+	theme(legend.key = element_blank())

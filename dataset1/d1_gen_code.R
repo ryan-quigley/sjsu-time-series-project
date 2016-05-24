@@ -138,15 +138,12 @@ par(mfrow=c(1,1))
 mean(p1.data)
 
 my.arma.final <- arima(p1.data.demean, order = c(3,0,1), include.mean = FALSE, method = "ML")
-my.arma.final.m <- arima(p1.data, order = c(3,0,1), include.mean = TRUE, method = "ML")
-
 
 # CHECK RESIDUALS
 # tsdiag(my.arma.final)
 # Final 13 predictions
 
 my.preds.final <- predict(my.arma.final, n.ahead = 13, se.fit = TRUE)
-my.preds.final.m <- predict(my.arma.final.m, n.ahead = 13, se.fit = TRUE)
 
 
 preds <- my.preds.final$pred + mean(p1.data)
@@ -163,15 +160,6 @@ lines(502:514, upper.bound, type="l", col="red")
 lines(502:514, lower.bound, type="l", col="red")
 points(502:514, p3.data.diff[550:562])
 
-preds <- my.preds.final.m$pred
-se <- my.preds.final.m$se
-lower.bound <- preds - 2*se
-upper.bound <- preds + 2*se
-
-
-lines(502:514, preds, type="b", col="green")
-lines(502:514, upper.bound, type="l", col="green")
-lines(502:514, lower.bound, type="l", col="green")
 
 ##########################
 # Predictions Drawn from dataset 3

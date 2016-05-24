@@ -53,9 +53,9 @@ pp.test(hp.99.diff.12.2, alternative = "s")
 
 
 ### 1998
-hp.data[128,]
+hp.data[133,]
 
-hp.98 <- hp.data[1:128,]
+hp.98 <- hp.data[1:133,]
 dim(hp.98)
 hp.98.diff <- diff(hp.98$index)
 hp.98.diff.12 <- diff(hp.98$index, lag = 12)
@@ -80,11 +80,11 @@ par(mfrow=c(2,1))
 par(mfrow=c(1,1))
 
 ### Most appropriate
-par(mfrow=c(2,2))
-   acf(hp.98.diff.12.d1, type = c("correlation"), lag.max = 40)
-   acf(hp.98.diff.12.d1, type = c("partial"), lag.max = 40)
+par(mfrow=c(2,1))
+   acf(hp.98.diff.12.d1, type = c("correlation"), lag.max = 40, main = "Sample ACF")
+   acf(hp.98.diff.12.d1, type = c("partial"), lag.max = 40, main = "Sample PACF")
 par(mfrow=c(1,1))
 
-spec.pgram(hp.98.diff.12.d1, taper = .1)
+spec.pgram(hp.98.diff.12.d1, taper = .1, main = "Periodogram", ylab = "Periodogram")
 ###
 

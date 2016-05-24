@@ -26,7 +26,7 @@ for(p in 1:(ar.p + 1)) {
         aic.vec <- c(aic.vec, temp.arma$aic)
         sig2.vec <- c(sig2.vec, temp.arma$sigma2)
         loglik.vec <- c(loglik.vec, temp.arma$loglik)
-        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2)/(length(deps.train) - (p + q) - (p + q + 1)))
+        arma.res.ss <- c(arma.res.ss, sum((temp.arma$residuals)^2)/(length(deps.train) - (p-1 + q-1) - (p-1 + q-1 + 1)))
         bic.vec <- c(bic.vec, BIC(temp.arma))
     }
 }
@@ -98,14 +98,16 @@ qqnorm(my.arma.0.2$residuals)
 tsdiag(my.arma.1.1, gof.lag = 25)
 qqnorm(my.arma.1.1$residuals)
 
+tsdiag(my.arma.0.1, gof.lag = 25)
+qqnorm(my.arma.0.1$residuals)
+
 
 library(lmtest)
-lrtest(my.arma.1.1, my.arma.1.2)
-lrtest(my.arma.1.1, my.arma.2.1)
-lrtest(my.arma.1.1, my.arma.2.2)
-# Choose smaller model for all
+lrtest(my.arma.1.0, my.arma.1.1)
+lrtest(my.arma.0.1, my.arma.1.1)
+# Choose larger model for all
 
-lrtest(my.arma.0.2, my.arma.1.2)
+lrtest(my.arma.0.1, my.arma.0.2)
 lrtest(my.arma.0.2, my.arma.2.2)
 # Choose (1,2)
 # Choose smaller model for both
@@ -165,16 +167,16 @@ par(mfrow=c(1,1))
 # ARMA(1,1)
 # Comparing theoretical spectrum for estimated coefficients
 par(mfrow=c(2,1))
-   spec.pgram(deps.dlog) 
+   spec.pgram(deps.dlog,  main = "Comparing Sample Periodogram to Theoretical Spectrum", ylab = "Periodogram") 
    my.spectrum(phi.of.b=c(1, -my.arma.1.1$coef[1]) , theta.of.b=c(1, my.arma.1.1$coef[2]), variance= my.arma.0.1$sigma2)
 par(mfrow=c(1,1))
 
 # Comparing theoretical acf/pacf to sample based on estimated model parameters
 par(mfcol=c(2,2))
-   acf(deps.dlog, type = c("correlation"))
+   acf(deps.dlog, type = c("correlation"), main = "Comparing Sample ACF to Theoretical ACF")
    plot(0:30, ARMAacf(ar = my.arma.1.1$coef[1], ma = my.arma.1.1$coef[2], lag.max=30), type="h", xlab = "Lag", ylab = "Theoretical ACF")
    abline(h=0)
-   acf(deps.dlog, type = c("partial"), lag.max = 80)
+   acf(deps.dlog, type = c("partial"), lag.max = 80, main = "Comparing Sample PACF to Theoretical PACF")
    plot(1:80, ARMAacf(ar = my.arma.1.1$coef[1], ma = my.arma.1.1$coef[2], lag.max=80, pacf=TRUE), type="h", xlab = "Lag", ylab = "Theoretical PACF")
    abline(h=0)
 par(mfrow=c(1,1))
