@@ -1,13 +1,14 @@
-# End can be at most 584
+### Libraries
+library(lmtest)
+
+### Ending of training set should be no more than 571 (584 is end of original dataset)
 
 start <- 400
 end <- 490
 
 p3.train <- p3.data[1:end]
 
-##### Candidate Model Analsysis #####
-
-# General analysis of models up to ARMA(5,3)
+### General model analysis of models up to ARMA(5,3)
 ar.p <- 5
 ma.q <- 3
 
@@ -69,7 +70,7 @@ pchisq(q = llr,df = nu, lower.tail = FALSE)
 
 ### END Likelihood ratio code
 
-# Candidates
+### Candidate Analysis
 
 my.arma.4.1 <- arima(p3.train, order = c(4,1,1), include.mean = FALSE, method = "ML")my.arma.5.1 <- arima(p3.train, order = c(5,1,1), include.mean = FALSE, method = "ML")my.arma.3.1 <- arima(p3.train, order = c(3,1,1), include.mean = FALSE, method = "ML")my.arma.3.2 <- arima(p3.train, order = c(3,1,2), include.mean = FALSE, method = "ML")my.arma.3.3 <- arima(p3.train, order = c(3,1,3), include.mean = FALSE, method = "ML")my.arma.5.3 <- arima(p3.train, order = c(5,1,3), include.mean = FALSE, method = "ML")my.arma.5.2 <- arima(p3.train, order = c(5,1,2), include.mean = FALSE, method = "ML")my.arma.4.2 <- arima(p3.train, order = c(4,1,2), include.mean = FALSE, method = "ML")my.arma.4.3 <- arima(p3.train, order = c(4,1,3), include.mean = FALSE, method = "ML")my.arma.5.0 <- arima(p3.train, order = c(5,1,0), include.mean = FALSE, method = "ML")my.arma.4.0 <- arima(p3.train, order = c(4,1,0), include.mean = FALSE, method = "ML")my.arma.3.0 <- arima(p3.train, order = c(3,1,0), include.mean = FALSE, method = "ML")
 
@@ -80,20 +81,17 @@ qqnorm(my.arma.3.1$residuals)
 tsdiag(my.arma.5.0)
 qqnorm(my.arma.5.0$residuals)
 
-
-library(lmtest)
 lrtest(my.arma.3.0, my.arma.4.0)
 
 
-# Predictionsmy.preds.3.1 <- predict(my.arma.3.1, n.ahead = 13, se.fit = TRUE)my.preds.5.0 <- predict(my.arma.5.0, n.ahead = 13, se.fit = TRUE)
+# Predictionsmy.preds.4.1 <- predict(my.arma.4.1, n.ahead = 13, se.fit = TRUE)my.preds.5.1 <- predict(my.arma.5.1, n.ahead = 13, se.fit = TRUE)my.preds.3.1 <- predict(my.arma.3.1, n.ahead = 13, se.fit = TRUE)my.preds.3.2 <- predict(my.arma.3.2, n.ahead = 13, se.fit = TRUE)my.preds.3.3 <- predict(my.arma.3.3, n.ahead = 13, se.fit = TRUE)my.preds.5.3 <- predict(my.arma.5.3, n.ahead = 13, se.fit = TRUE)my.preds.5.2 <- predict(my.arma.5.2, n.ahead = 13, se.fit = TRUE)my.preds.4.2 <- predict(my.arma.4.2, n.ahead = 13, se.fit = TRUE)my.preds.4.3 <- predict(my.arma.4.3, n.ahead = 13, se.fit = TRUE)my.preds.5.0 <- predict(my.arma.5.0, n.ahead = 13, se.fit = TRUE)my.preds.4.0 <- predict(my.arma.4.0, n.ahead = 13, se.fit = TRUE)my.preds.3.0 <- predict(my.arma.3.0, n.ahead = 13, se.fit = TRUE)
 
 
 # Predictions Error
-sse.3.1 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.3.1$pred)^2)sse.5.0 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.5.0$pred)^2)
+sse.4.1 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.4.1$pred)^2)sse.5.1 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.5.1$pred)^2)sse.3.1 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.3.1$pred)^2)sse.3.2 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.3.2$pred)^2)sse.3.3 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.3.3$pred)^2)sse.5.3 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.5.3$pred)^2)sse.5.2 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.5.2$pred)^2)sse.4.2 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.4.2$pred)^2)sse.4.3 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.4.3$pred)^2)sse.5.0 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.5.0$pred)^2)sse.4.0 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.4.0$pred)^2)sse.3.0 <- sum((p3.data[(end + 1):(end + 13)] - my.preds.3.0$pred)^2)
 
-pred.error <- data.frame(sse.3.1, sse.5.0)
+pred.error <- data.frame(sse.3.0,sse.4.0,sse.5.0,sse.4.3,sse.4.2,sse.5.2,sse.5.3,sse.3.3,sse.3.2,sse.3.1,sse.5.1,sse.4.1)
 pred.error[order(pred.error)]
-
 
 
 ### Plotting predictions

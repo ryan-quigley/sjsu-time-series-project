@@ -1,5 +1,7 @@
+### Libraries
+library(lmtest)
 
-# End can be at most 1487
+### Ending of training set should be no more than 1487 (1500 is end of original dataset)
 
 start <- 1400
 end <- 1430
@@ -8,7 +10,7 @@ p2.train.w.mean <- p2.data[1:end]
 train.mean <- mean(p2.train.w.mean)
 p2.train <- p2.train.w.mean - train.mean
 
-# General AIC analysis of many models up to ARMA(6,6)
+# General model analysis of many models up to ARMA(6,6)
 # Periodogram suggests at the very least an ARMA(2,2)
 ar.p <- 6
 ma.q <- 6
@@ -76,12 +78,11 @@ my.arma.5.4 <- arima(p2.train, order = c(5,0,4), include.mean = FALSE, method = 
 my.sarima <- arima(p2.train, order = c(3,0,3), seasonal = list(order = c(1,0,1), period = 3), include.mean = FALSE, method = "ML")
 
 # Evaluation
-tsdiag(my.arma.6.6)
+tsdiag(my.arma.3.3)
 qqnorm(my.arma.3.3$residuals)
 
-# library(lmtest)
-# lrtest(my.arma.3.3, my.arma.3.5)
-# All likelihood ratio tests give p-value greater than 0.10
+lrtest(my.arma.3.3, my.arma.3.5)
+
 
 # Predictions
 my.preds.5.4 <- predict(my.arma.5.4, n.ahead = 13, se.fit = TRUE)my.preds.6.3 <- predict(my.arma.6.3, n.ahead = 13, se.fit = TRUE)my.preds.5.6 <- predict(my.arma.5.6, n.ahead = 13, se.fit = TRUE)my.preds.6.4 <- predict(my.arma.6.4, n.ahead = 13, se.fit = TRUE)my.preds.3.6 <- predict(my.arma.3.6, n.ahead = 13, se.fit = TRUE)my.preds.3.3 <- predict(my.arma.3.3, n.ahead = 13, se.fit = TRUE)my.preds.4.6 <- predict(my.arma.4.6, n.ahead = 13, se.fit = TRUE)my.preds.4.5 <- predict(my.arma.4.5, n.ahead = 13, se.fit = TRUE)my.preds.6.5 <- predict(my.arma.6.5, n.ahead = 13, se.fit = TRUE)my.preds.3.4 <- predict(my.arma.3.4, n.ahead = 13, se.fit = TRUE)my.preds.3.5 <- predict(my.arma.3.5, n.ahead = 13, se.fit = TRUE)my.preds.4.3 <- predict(my.arma.4.3, n.ahead = 13, se.fit = TRUE)my.preds.5.3 <- predict(my.arma.5.3, n.ahead = 13, se.fit = TRUE)my.preds.6.6 <- predict(my.arma.6.6, n.ahead = 13, se.fit = TRUE)my.preds.5.5 <- predict(my.arma.5.5, n.ahead = 13, se.fit = TRUE)my.preds.4.4 <- predict(my.arma.4.4, n.ahead = 13, se.fit = TRUE)
