@@ -1,7 +1,9 @@
-##### Supporting Code for Dataset 1 #####
-setwd('~/documents/sjsu/265/time-series-project')
+##### Supporting Code for Glacial Deposits Dataset #####
+### Libraries
+library(ggplot2)
 
-deps.data <- scan('deposits.txt')
+### Data
+deps.data <- scan('../deposits.txt')
 deps.diff <- diff(deps.data, lag = 1, differences = 1)
 deps.log <- log(deps.data)
 deps.dlog <- diff(log(deps.data), lag = 1, differences = 1)
@@ -62,7 +64,7 @@ pp.test(deps.dlog)
 adf.test(deps.log)
 # Result: close to not rejecting the null hypothesis...p-value = 0.055
 
-## Plotting residual sum of squares against order to see where curve flattens out
+### Plotting residual sum of squares against order to see where curve flattens out
 ar.res.ss <- vector(mode = 'numeric')
 for(p in 1:10) {
 	temp.ar <- arima(deps.dlog, order = c(p-1,0,0), include.mean = FALSE)
@@ -73,16 +75,16 @@ plot(0:(length(ar.res.ss)-1), ar.res.ss)
 
 
 ###################################################################################################################
-##### FINAL MODELS...CHOOSE ONE!!! #####
+##### FINAL MODELS #####
 
 my.arma.final <- arima(deps.log, order = c(1,1,1), include.mean = FALSE, method = "ML")
 my.arma.final
 
-# CHECK RESIDUALS
+# Resdual Analysis
 tsdiag(my.arma.final, gof.lag = 25)
 qqnorm(my.arma.final$residuals)
-# Final 13 predictions
 
+# Final forecasts 13-steps ahead
 my.preds.final <- predict(my.arma.final, n.ahead = 13, se.fit = TRUE)
 
 preds <- my.preds.final$pred
@@ -95,16 +97,15 @@ upper.bound.og <- exp(preds + 2*se)
 cbind(preds.og, lower.bound.og, upper.bound.og)
 
 # Plot predictions
-# plot(600:624, deps.data[600:624], ylim = c(0, 60), xlim=c(600,640), type="b")
-# lines(625:637, preds.og, type="b", col="blue")
-# lines(625:637, upper.bound.og, type="l", col="blue")
-# lines(625:637, lower.bound.og, type="l", col="blue")
+plot(600:624, deps.data[600:624], ylim = c(0, 60), xlim=c(600,640), type="b")
+lines(625:637, preds.og, type="b", col="blue")
+lines(625:637, upper.bound.og, type="l", col="blue")
+lines(625:637, lower.bound.og, type="l", col="blue")
 
 deps.final.plot.df <- data.frame(t = c(600:624), y = deps.data[600:624])
 deps.final.preds.df <- data.frame(t = c(624:637), lb = c(deps.data[624],lower.bound.og), preds = c(deps.data[624],preds.og), ub = c(deps.data[624],upper.bound.og))
 
-# Add legend!!!!
-library(ggplot2)
+### Final plot
 ggplot(deps.final.preds.df, aes(x = t, y = preds)) +
 	geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Prediction Interval"), , alpha = 0.6) +
 	geom_line(aes(colour = "Forecasts")) + 

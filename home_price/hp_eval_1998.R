@@ -1,15 +1,15 @@
+### Libraries
+library(lmtest)
+library(ggplot2)
 
-# End can be at most 133
+### Ending of training set can be no more than 133
 
 start <- 100
 end <- dim(hp.98)[1]-12
 
 hp.98.train <- hp.98[1:end,2]
 
-##### Candidate Model Analsysis #####
-
-# General analysis of many models
-# Currently: up to SARIMA(3,1,3)(1,1,0)s=12
+### General model analysis of models up to SARIMA(3,1,3)(1,1,0)s=12
 ar.p <- 3
 ma.q <- 2
 
@@ -69,8 +69,8 @@ ifelse(llr  > (nu + sqrt(2*nu)), 'REJECT the null hypothesis', 'Retain the null 
 pchisq(q = llr,df = nu, lower.tail = FALSE)
 ### END Likelihood ratio code
 
-
-### Candidates
+##### Candidate Model Analsysis #####
+# Candidate
 my.arma.3.0 <- arima(hp.98.train, order = c(3,1,0), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.2.0 <- arima(hp.98.train, order = c(2,1,0), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.1.0 <- arima(hp.98.train, order = c(1,1,0), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.3.1 <- arima(hp.98.train, order = c(3,1,1), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.2.1 <- arima(hp.98.train, order = c(2,1,1), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.1.1 <- arima(hp.98.train, order = c(1,1,1), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.3.2 <- arima(hp.98.train, order = c(3,1,2), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.2.2 <- arima(hp.98.train, order = c(2,1,2), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.1.2 <- arima(hp.98.train, order = c(1,1,2), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.0.0 <- arima(hp.98.train, order = c(0,1,0), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.0.1 <- arima(hp.98.train, order = c(0,1,1), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")my.arma.0.2 <- arima(hp.98.train, order = c(0,1,2), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")
 
 # Predictions
@@ -83,7 +83,7 @@ pred.error <- data.frame(sse.3.0,sse.1.0,sse.2.1,sse.1.2)
 pred.error[order(pred.error)]
 
 
-library(lmtest)
+# Evaluation
 lrtest(my.arma.1.0, my.arma.3.0)
 # Choose smaller model
 lrtest(my.arma.1.0, my.arma.1.2)
@@ -91,16 +91,14 @@ lrtest(my.arma.1.0, my.arma.1.2)
 lrtest(my.arma.1.0, my.arma.2.1)
 # Maybe choose smaller model
 
-
 tsdiag(my.arma.3.0, gof.lag = 25)
 tsdiag(my.arma.1.0, gof.lag = 25)
 tsdiag(my.arma.1.2, gof.lag = 25)
 tsdiag(my.arma.2.1, gof.lag = 25)
 
-qqnorm(my.arma.2.1$residuals)
-qqnorm(rnorm(length(my.arma.3.0$residuals)))
+qqnorm(my.arma.1.0$residuals)
 
-## Choose AR(3)
+
 
 ########################################################
 ### Plotting predictions
@@ -131,14 +129,17 @@ lines((end + 1):(end + 12), upper.bound, type="l", col="green")
 lines((end + 1):(end + 12), lower.bound, type="l", col="green")
 
 
+########################################################
+######## FINAL MODEL
+# SARIMA(1,1,0)(0,1,1)s=12
 
-######## Final models 
-# WINNER is SARIMA(1,1,0)(0,1,1)s=12
 my.sarima.100.011.12 <- arima(hp.98$index, order = c(1,1,0), seasonal = list(order = c(0,1,1), period = 12), include.mean = FALSE, method = "ML")
 
 tsdiag(my.sarima.100.011.12, gof.lag =  40)
+qqnorm(my.sarima.100.011.12$residuals)
+qqnorm(rnorm(length(my.sarima.100.011.12$residuals)))
 
-
+# Forecasts
 dim(hp.data)
 dim(hp.98)
 my.preds.sarima <- predict(my.sarima.100.011.12, n.ahead = 216, se.fit = TRUE)
@@ -150,8 +151,8 @@ upper.bound <- preds + 2*se
 
 hp.final.preds.df <- data.frame(date = hp.data[133:349,1], lb = c(hp.data[133,2],lower.bound), preds = c(hp.data[133,2],preds), ub = c(hp.data[133,2],upper.bound))
 
-# Add legend!!!!
-library(ggplot2)
+
+# Final Plot
 ggplot(hp.final.preds.df, aes(x = date, y = preds)) +
 	geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Prediction Interval"), , alpha = 0.6) +
 	geom_line(data = hp.data, aes(x=date,y=index, colour = "True Index")) +

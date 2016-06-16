@@ -71,7 +71,7 @@ pchisq(q = llr,df = nu, lower.tail = FALSE)
 ### END Likelihood ratio code
 
 ### Candidate Analysis
-
+# Candidates
 my.arma.4.1 <- arima(p3.train, order = c(4,1,1), include.mean = FALSE, method = "ML")my.arma.5.1 <- arima(p3.train, order = c(5,1,1), include.mean = FALSE, method = "ML")my.arma.3.1 <- arima(p3.train, order = c(3,1,1), include.mean = FALSE, method = "ML")my.arma.3.2 <- arima(p3.train, order = c(3,1,2), include.mean = FALSE, method = "ML")my.arma.3.3 <- arima(p3.train, order = c(3,1,3), include.mean = FALSE, method = "ML")my.arma.5.3 <- arima(p3.train, order = c(5,1,3), include.mean = FALSE, method = "ML")my.arma.5.2 <- arima(p3.train, order = c(5,1,2), include.mean = FALSE, method = "ML")my.arma.4.2 <- arima(p3.train, order = c(4,1,2), include.mean = FALSE, method = "ML")my.arma.4.3 <- arima(p3.train, order = c(4,1,3), include.mean = FALSE, method = "ML")my.arma.5.0 <- arima(p3.train, order = c(5,1,0), include.mean = FALSE, method = "ML")my.arma.4.0 <- arima(p3.train, order = c(4,1,0), include.mean = FALSE, method = "ML")my.arma.3.0 <- arima(p3.train, order = c(3,1,0), include.mean = FALSE, method = "ML")
 
 # Evaluation

@@ -1,14 +1,14 @@
+### Libraries
+library(lmtest)
 
-
-
+### Ending of training set should be no more than 611 (624 is end of original dataset)
 start <- 550
 end <- 600
 
 deps.train <- deps.log[1:end]
 
-##### Candidate Model Analsysis #####
 
-# General AIC analysis of many models up to ARMA(2,2)
+### General model analysis of models up to ARMA(2,2)
 ar.p <- 2
 ma.q <- 2
 
@@ -70,7 +70,8 @@ pchisq(q = llr,df = nu, lower.tail = FALSE)
 ### END Likelihood ratio code
 
 
-### Candidates
+### Candidate Analysis 
+# Candidates
 my.arma.0.2 <- arima(deps.train, order = c(0,1,2), include.mean = FALSE, method = "ML")my.arma.2.1 <- arima(deps.train, order = c(2,1,1), include.mean = FALSE, method = "ML")my.arma.1.1 <- arima(deps.train, order = c(1,1,1), include.mean = FALSE, method = "ML")my.arma.1.2 <- arima(deps.train, order = c(1,1,2), include.mean = FALSE, method = "ML")my.arma.2.2 <- arima(deps.train, order = c(2,1,2), include.mean = FALSE, method = "ML")my.arma.0.1 <- arima(deps.train, order = c(0,1,1), include.mean = FALSE, method = "ML")my.arma.2.0 <- arima(deps.train, order = c(2,1,0), include.mean = FALSE, method = "ML")my.arma.1.0 <- arima(deps.train, order = c(1,1,0), include.mean = FALSE, method = "ML")my.arma.0.0 <- arima(deps.train, order = c(0,1,0), include.mean = FALSE, method = "ML")
 
 # Predictions
@@ -82,16 +83,7 @@ sse.0.2 <- sum((deps.data[(end + 1):(end + 13)] - exp(my.preds.0.2$pred))^2)sse
 pred.error <- data.frame(sse.0.2, sse.2.1, sse.1.1, sse.1.2, sse.2.2, sse.0.1, sse.2.0, sse.1.0, sse.0.0)
 pred.error[order(pred.error)]
 
-# @300
-#    sse.2.2  sse.2.1  sse.1.2  sse.0.2  sse.1.1  sse.0.1  sse.2.0  sse.0.0  sse.1.0
-# 1 736.6538 736.6897 747.7821 753.4361 764.2842 782.5632 1690.054 1726.013 2959.904
-# @611
-#   sse.0.2  sse.1.1  sse.2.2  sse.2.1  sse.0.1  sse.1.2 sse.2.0  sse.1.0  sse.0.0
-# 1 222.036 224.0757 226.5578 233.0049 233.9111 239.6679 351.658 388.9695 472.7238
-# @500
-#    sse.2.0  sse.0.1  sse.0.2  sse.2.1  sse.1.2  sse.1.1 sse.2.2  sse.1.0  sse.0.0
-# 1 1796.931 1932.168 2433.737 2581.612 2582.502 2584.696 2633.26 2958.093 6798.881
-
+# Evaluation
 tsdiag(my.arma.0.2, gof.lag = 25)
 qqnorm(my.arma.0.2$residuals)
 
@@ -102,17 +94,10 @@ tsdiag(my.arma.0.1, gof.lag = 25)
 qqnorm(my.arma.0.1$residuals)
 
 
-library(lmtest)
 lrtest(my.arma.1.0, my.arma.1.1)
 lrtest(my.arma.0.1, my.arma.1.1)
-# Choose larger model for all
-
 lrtest(my.arma.0.1, my.arma.0.2)
 lrtest(my.arma.0.2, my.arma.2.2)
-# Choose (1,2)
-# Choose smaller model for both
-
-### NEED to compare ARMA(1,1) and ARMA(0,2)...prediction error is better for (0,2)?
 
 
 ### Plotting predictions
@@ -143,7 +128,9 @@ lines((end + 1):(end + 13), upper.bound.og, type="l", col="green")
 lines((end + 1):(end + 13), lower.bound.og, type="l", col="green")
 # The two give the same results essentially
 
-### Compare sample to theoretical
+
+
+### Compare sample plots to theoretical plots
 
 # ARMA(0,2)
 # Comparing theoretical spectrum for estimated coefficients
