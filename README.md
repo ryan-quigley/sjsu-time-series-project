@@ -2,7 +2,7 @@
 MATH 265: Time Series, Spring 2016
 
 ### Datasets
-Datasets 1-3 were simulated time series  
+Datasets 1-3 (simulated ARIMA processes)
 Glacial Deposits  
 S&P/Case-Shiller Home Price Index
 
